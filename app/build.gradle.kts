@@ -58,4 +58,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation("io.coil-kt:coil-compose:2.5.0") // Untuk load gambar dengan rememberAsyncImagePainter
+    implementation("androidx.compose.ui:ui:1.6.0") // Untuk Alignment dan UI lainnya
 }
