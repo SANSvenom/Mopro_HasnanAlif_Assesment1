@@ -1,47 +1,113 @@
 package com.hasnan0062.hasnanalif_607062300062_assesment1
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.hasnan0062.hasnanalif_607062300062_assesment1.ui.theme.HasnanAlif_607062300062_assesment1Theme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.*
+import androidx.navigation.compose.rememberNavController
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            HasnanAlif_607062300062_assesment1Theme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+            NoteApp()
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
+fun NoteApp() {
+    val navController = rememberNavController()
+    NavHost(navController, startDestination = "home") {
+        composable("home") { HomeScreen(navController) }
+        composable("note") { NoteScreen(navController) }
+    }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    HasnanAlif_607062300062_assesment1Theme {
-        Greeting("Android")
+fun HomeScreen(navController: NavController) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp)
+    ) {
+        Text(text = "Simple Note App", fontSize = 24.sp, color = Color.Black)
+        Button(onClick = { navController.navigate("note") }) {
+            Text("Create Note")
+        }
+    }
+}
+
+@Composable
+fun NoteScreen(navController: NavController) {
+    var noteText by remember { mutableStateOf(TextFieldValue()) }
+    var isImportant by remember { mutableStateOf(false) }
+    val languageOptions = listOf("English", "Indonesia")
+    var selectedLanguage by remember { mutableStateOf(languageOptions[0]) }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Create Note", fontSize = 20.sp)
+        BasicTextField(
+            value = noteText,
+            onValueChange = { noteText = it },
+            modifier = Modifier.fillMaxWidth().height(100.dp)
+        )
+
+        Row {
+            Text("Mark as Important")
+            Checkbox(
+                checked = isImportant,
+                onCheckedChange = { isImportant = it }
+            )
+        }
+
+        DropdownMenuDemo(selectedLanguage, languageOptions) { selectedLanguage = it }
+
+        Button(onClick = {
+            val intent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, noteText.text)
+                type = "text/plain"
+            }
+            navController.context.startActivity(Intent.createChooser(intent, "Share via"))
+        }) {
+            Text("Share Note")
+        }
+    }
+}
+
+@Composable
+fun DropdownMenuDemo(selected: String, options: List<String>, onOptionSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.wrapContentSize()) {
+        Button(onClick = { expanded = true }) { Text(text = selected) }
+
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
+
+//                {
+//                    Text(option)
+//                }
+            }
+        }
     }
 }
