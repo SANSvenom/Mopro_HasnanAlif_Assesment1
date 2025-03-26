@@ -10,7 +10,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,49 +47,66 @@ fun NoteApp() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, notes: List<Triple<String, Uri?, Boolean>>) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(text = "Simple Note App", fontSize = 24.sp, color = Color.Black)
-        Button(onClick = { navController.navigate("note") }) {
-            Text("Create Note")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Simple Note App") },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                )
+            )
         }
+    )
+    { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        ) {
+            Button(onClick = { navController.navigate("note") })
+            {
+                Text("Create Note")
 
-        // Urutkan catatan, yang "penting" tampil di atas
-        val sortedNotes = notes.sortedByDescending { it.third }
+            }
 
-        sortedNotes.forEach { (text, imageUri, isImportant) ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            ) {
-                if (isImportant) {
-                    Text("📌 Pinned Note", fontSize = 14.sp, color = Color.Red)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val sortedNotes = notes.sortedByDescending { it.third }
+
+            sortedNotes.forEach { (text, imageUri, isImportant) ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    if (isImportant) {
+                        Text("📌 Pinned Note", fontSize = 14.sp, color = Color.Red)
+                    }
+
+                    imageUri?.let {
+                        Image(
+                            painter = rememberAsyncImagePainter(it),
+                            contentDescription = "Note Image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                        )
+                    }
+                    Text(text = text, fontSize = 16.sp, color = Color.Black)
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-
-                imageUri?.let {
-                    Image(
-                        painter = rememberAsyncImagePainter(it),
-                        contentDescription = "Note Image",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                    )
-                }
-                Text(text = text, fontSize = 16.sp, color = Color.Black)
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteScreen(navController: NavController, notes: MutableList<Triple<String, Uri?, Boolean>>) {
     var noteText by remember { mutableStateOf(TextFieldValue()) }
@@ -100,49 +120,68 @@ fun NoteScreen(navController: NavController, notes: MutableList<Triple<String, U
         selectedImageUri = uri
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text("Create Note", fontSize = 20.sp, color = Color.Black)
-
-        Button(onClick = { imagePickerLauncher.launch("image/*") }) {
-            Text("Select Image")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Create Note") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigate("home") }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                )
+            )
         }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+                Text("Select Image")
+            }
 
-        selectedImageUri?.let { uri ->
-            Image(
-                painter = rememberAsyncImagePainter(uri),
-                contentDescription = "Selected Image",
+            selectedImageUri?.let { uri ->
+                Image(
+                    painter = rememberAsyncImagePainter(uri),
+                    contentDescription = "Selected Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                )
+            }
+
+            BasicTextField(
+                value = noteText,
+                onValueChange = { noteText = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(100.dp)
             )
-        }
 
-        BasicTextField(
-            value = noteText,
-            onValueChange = { noteText = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-        )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = isImportant,
+                    onCheckedChange = { isImportant = it }
+                )
+                Text("Mark as Important")
+            }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = isImportant,
-                onCheckedChange = { isImportant = it }
-            )
-            Text("Mark as Important")
-        }
-
-        Button(onClick = {
-            notes.add(Triple(noteText.text, selectedImageUri, isImportant))
-            navController.navigate("home")
-        }) {
-            Text("Save Note")
+            Button(onClick = {
+                notes.add(Triple(noteText.text, selectedImageUri, isImportant))
+                navController.navigate("home")
+            }) {
+                Text("Save Note")
+            }
         }
     }
 }
