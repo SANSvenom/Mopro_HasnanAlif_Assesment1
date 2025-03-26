@@ -8,7 +8,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -26,7 +25,7 @@ import androidx.navigation.compose.*
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
-
+import androidx.compose.ui.res.stringResource
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -38,7 +37,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Menggunakan data class agar lebih mudah dikelola
 data class Note(
     val id: String = UUID.randomUUID().toString(),
     var text: String,
@@ -59,6 +57,7 @@ fun NoteApp() {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
@@ -75,7 +74,7 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                                 .padding(end = 8.dp)
 
                         )
-                        Text("Note App")
+                        Text(stringResource(id = R.string.app_name))
                     }
                 },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
@@ -92,7 +91,7 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                 .padding(16.dp)
         ) {
             Button(onClick = { navController.navigate("note/new") }) {
-                Text("Create Note")
+                Text(stringResource(id = R.string.create_note))
             }
             Spacer(modifier = Modifier.height(16.dp))
             val sortedNotes = notes.sortedByDescending { it.isImportant }
@@ -103,7 +102,7 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                         .padding(8.dp)
                 ) {
                     if (note.isImportant) {
-                        Text("📌 Pinned Note", fontSize = 14.sp, color = Color.Red)
+                        Text(stringResource(id = R.string.pinned_note))
                     }
                     note.imageUri?.let {
                         Image(
@@ -137,7 +136,7 @@ fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: S
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isImportant by remember { mutableStateOf(false) }
 
-    val isEditing = noteId != "new" // Cek apakah sedang edit atau membuat note baru
+    val isEditing = noteId != "new"
     val noteToEdit = notes.find { it.id == noteId }
 
     LaunchedEffect(noteToEdit) {
@@ -157,7 +156,7 @@ fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: S
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Edit Note" else "Create Note") }, // Menyesuaikan judul
+                title = { Text(stringResource(id = if (isEditing) R.string.edit_note else R.string.create_note)) },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -168,6 +167,23 @@ fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: S
                     }
                 }
             )
+        },
+        bottomBar = {
+            Button(
+                onClick = {
+                    if (isEditing && noteToEdit != null) {
+                        noteToEdit.text = noteText.text
+                        noteToEdit.imageUri = selectedImageUri
+                        noteToEdit.isImportant = isImportant
+                    } else {
+                        notes.add(Note(text = noteText.text, imageUri = selectedImageUri, isImportant = isImportant))
+                    }
+                    navController.navigate("home")
+                },
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            ) {
+                Text(stringResource(id = R.string.save_note))
+            }
         }
     ) { paddingValues ->
         Column(
@@ -178,9 +194,8 @@ fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: S
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(onClick = { imagePickerLauncher.launch("image/*") }) {
-                Text("Select Image")
+                Text(stringResource(id = R.string.select_image))
             }
-
             selectedImageUri?.let { uri ->
                 Image(
                     painter = rememberAsyncImagePainter(uri),
@@ -190,40 +205,22 @@ fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: S
                         .height(200.dp)
                 )
             }
-
-            BasicTextField(
+            TextField(
                 value = noteText,
                 onValueChange = { noteText = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.textFieldColors(
+                    containerColor = Color.LightGray
+                ),
+                placeholder = { Text(stringResource(id = R.string.note_placeholder)) }
             )
-
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = isImportant,
                     onCheckedChange = { isImportant = it }
                 )
-                Text("Mark as Important")
-            }
-
-            Button(onClick = {
-                if (isEditing) {
-                    // Edit note lama
-                    noteToEdit?.apply {
-                        text = noteText.text
-                        imageUri = selectedImageUri
-                        isImportant = isImportant
-                    }
-                } else {
-                    // Tambahkan note baru
-                    notes.add(Note(text = noteText.text, imageUri = selectedImageUri, isImportant = isImportant))
-                }
-                navController.navigate("home")
-            }) {
-                Text("Save Note")
+                Text(stringResource(id = R.string.mark_as_important))
             }
         }
     }
 }
-

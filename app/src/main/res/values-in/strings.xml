@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aplikasi Catatan</string>
+    <string name="mark_as_important">Tandai sebagai Penting</string>
+    <string name="pinned_note">📌 Catatan Tersemat</string>
+    <string name="create_note">Buat Catatan</string>
+    <string name="edit_note">Edit Catatan</string>
+    <string name="save_note">Simpan Catatan</string>
+    <string name="select_image">Pilih Gambar</string>
+    <string name="note_placeholder">Masukkan catatan...</string>
+
+
+</resources>
