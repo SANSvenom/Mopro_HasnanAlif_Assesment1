@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun NoteApp() {
     val navController = rememberNavController()
-    val notes = remember { mutableStateListOf<Pair<String, Uri?>>() }
+    val notes = remember { mutableStateListOf<Triple<String, Uri?, Boolean>>() }
 
     NavHost(navController, startDestination = "home") {
         composable("home") { HomeScreen(navController, notes) }
@@ -45,7 +45,7 @@ fun NoteApp() {
 }
 
 @Composable
-fun HomeScreen(navController: NavController, notes: List<Pair<String, Uri?>>) {
+fun HomeScreen(navController: NavController, notes: List<Triple<String, Uri?, Boolean>>) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,8 +58,19 @@ fun HomeScreen(navController: NavController, notes: List<Pair<String, Uri?>>) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        notes.forEach { (text, imageUri) ->
-            Column(modifier = Modifier.padding(8.dp)) {
+        // Urutkan catatan, yang "penting" tampil di atas
+        val sortedNotes = notes.sortedByDescending { it.third }
+
+        sortedNotes.forEach { (text, imageUri, isImportant) ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                if (isImportant) {
+                    Text("📌 Pinned Note", fontSize = 14.sp, color = Color.Red)
+                }
+
                 imageUri?.let {
                     Image(
                         painter = rememberAsyncImagePainter(it),
@@ -77,9 +88,10 @@ fun HomeScreen(navController: NavController, notes: List<Pair<String, Uri?>>) {
 }
 
 @Composable
-fun NoteScreen(navController: NavController, notes: MutableList<Pair<String, Uri?>>) {
+fun NoteScreen(navController: NavController, notes: MutableList<Triple<String, Uri?, Boolean>>) {
     var noteText by remember { mutableStateOf(TextFieldValue()) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isImportant by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -118,8 +130,16 @@ fun NoteScreen(navController: NavController, notes: MutableList<Pair<String, Uri
                 .height(100.dp)
         )
 
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = isImportant,
+                onCheckedChange = { isImportant = it }
+            )
+            Text("Mark as Important")
+        }
+
         Button(onClick = {
-            notes.add(Pair(noteText.text, selectedImageUri))
+            notes.add(Triple(noteText.text, selectedImageUri, isImportant))
             navController.navigate("home")
         }) {
             Text("Save Note")
