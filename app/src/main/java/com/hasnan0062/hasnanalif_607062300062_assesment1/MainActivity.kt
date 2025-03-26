@@ -25,6 +25,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.*
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.res.painterResource
+
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -57,22 +59,32 @@ fun NoteApp() {
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Simple Note App") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_note),
+                            contentDescription = "App Logo",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .padding(end = 8.dp)
+
+                        )
+                        Text("Note App")
+                    }
+                },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
-    )
-    { paddingValues ->
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -82,9 +94,7 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
             Button(onClick = { navController.navigate("note/new") }) {
                 Text("Create Note")
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
             val sortedNotes = notes.sortedByDescending { it.isImportant }
             sortedNotes.forEach { note ->
                 Column(
@@ -95,7 +105,6 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                     if (note.isImportant) {
                         Text("📌 Pinned Note", fontSize = 14.sp, color = Color.Red)
                     }
-
                     note.imageUri?.let {
                         Image(
                             painter = rememberAsyncImagePainter(it),
@@ -107,7 +116,6 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                     }
                     Text(text = note.text, fontSize = 16.sp, color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
-
                     Row {
                         IconButton(onClick = { navController.navigate("note/${note.id}") }) {
                             Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
@@ -121,6 +129,7 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: String?) {
