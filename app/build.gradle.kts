@@ -61,4 +61,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0") // Untuk load gambar dengan rememberAsyncImagePainter
     implementation("androidx.compose.ui:ui:1.6.0") // Untuk Alignment dan UI lainnya
     implementation("androidx.compose.material3:material3:1.2.0")
+    implementation ("androidx.compose.material3:material3:1.1.1")
+    implementation("com.google.android.material:material:1.11.0") // Versi terbaru
+
+
 }

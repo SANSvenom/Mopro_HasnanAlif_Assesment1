@@ -6,7 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -20,9 +22,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
-import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -30,9 +33,15 @@ import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) // Ikuti sistem
+
         super.onCreate(savedInstanceState)
         setContent {
-            NoteApp()
+            MaterialTheme(
+                colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+            ) {
+                NoteApp()
+            }
         }
     }
 }
@@ -44,23 +53,30 @@ data class Note(
     var isImportant: Boolean
 )
 
+// ✅ Tambahkan ViewModel agar data tetap ada saat berpindah mode
+class NoteViewModel : ViewModel() {
+    var notes = mutableStateListOf<Note>()
+}
+
 @Composable
 fun NoteApp() {
     val navController = rememberNavController()
-    val notes = remember { mutableStateListOf<Note>() }
+    val viewModel: NoteViewModel = viewModel() // Gunakan ViewModel
 
     NavHost(navController, startDestination = "home") {
-        composable("home") { HomeScreen(navController, notes) }
+        composable("home") { HomeScreen(navController, viewModel) }
         composable("note/{noteId}") { backStackEntry ->
             val noteId = backStackEntry.arguments?.getString("noteId")
-            NoteScreen(navController, notes, noteId)
+            NoteScreen(navController, viewModel, noteId)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
+fun HomeScreen(navController: NavController, viewModel: NoteViewModel) {
+    val notes = viewModel.notes // Data dari ViewModel
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -72,7 +88,6 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                             modifier = Modifier
                                 .size(40.dp)
                                 .padding(end = 8.dp)
-
                         )
                         Text(stringResource(id = R.string.app_name))
                     }
@@ -94,6 +109,7 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                 Text(stringResource(id = R.string.create_note))
             }
             Spacer(modifier = Modifier.height(16.dp))
+
             val sortedNotes = notes.sortedByDescending { it.isImportant }
             sortedNotes.forEach { note ->
                 Column(
@@ -113,7 +129,11 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
                                 .height(200.dp)
                         )
                     }
-                    Text(text = note.text, fontSize = 16.sp, color = Color.Black)
+                    Text(
+                        text = note.text,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface // ✅ Warna teks sesuai tema
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row {
                         IconButton(onClick = { navController.navigate("note/${note.id}") }) {
@@ -131,13 +151,13 @@ fun HomeScreen(navController: NavController, notes: MutableList<Note>) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: String?) {
+fun NoteScreen(navController: NavController, viewModel: NoteViewModel, noteId: String?) {
     var noteText by remember { mutableStateOf(TextFieldValue()) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isImportant by remember { mutableStateOf(false) }
 
     val isEditing = noteId != "new"
-    val noteToEdit = notes.find { it.id == noteId }
+    val noteToEdit = viewModel.notes.find { it.id == noteId }
 
     LaunchedEffect(noteToEdit) {
         noteToEdit?.let {
@@ -176,7 +196,7 @@ fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: S
                         noteToEdit.imageUri = selectedImageUri
                         noteToEdit.isImportant = isImportant
                     } else {
-                        notes.add(Note(text = noteText.text, imageUri = selectedImageUri, isImportant = isImportant))
+                        viewModel.notes.add(Note(text = noteText.text, imageUri = selectedImageUri, isImportant = isImportant))
                     }
                     navController.navigate("home")
                 },
@@ -210,15 +230,18 @@ fun NoteScreen(navController: NavController, notes: MutableList<Note>, noteId: S
                 onValueChange = { noteText = it },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.textFieldColors(
-                    containerColor = Color.LightGray
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant, // ✅ Background sesuai tema
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = Color.Gray
                 ),
-                placeholder = { Text(stringResource(id = R.string.note_placeholder)) }
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = isImportant,
-                    onCheckedChange = { isImportant = it }
+                textStyle = LocalTextStyle.current.copy(
+                    color = MaterialTheme.colorScheme.onSurface // ✅ Warna teks mengikuti tema
                 )
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = isImportant, onCheckedChange = { isImportant = it })
                 Text(stringResource(id = R.string.mark_as_important))
             }
         }

@@ -7,5 +7,7 @@
     <string name="mark_as_important">Mark as Important</string>
     <string name="pinned_note">📌 Pinned Note</string>
     <string name="note_placeholder">Enter notes...</string>
+    <string name="error_empty_note">Notes cannot be empty!</string>
+
 
 </resources>
