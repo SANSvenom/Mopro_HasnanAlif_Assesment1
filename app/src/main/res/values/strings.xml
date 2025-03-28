@@ -8,6 +8,7 @@
     <string name="pinned_note">📌 Pinned Note</string>
     <string name="note_placeholder">Enter notes...</string>
     <string name="error_empty_note">Notes cannot be empty!</string>
+    <string name="share_via">Share via</string>
 
 
 </resources>

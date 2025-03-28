@@ -29,6 +29,11 @@ import androidx.navigation.compose.*
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import android.content.Intent
+import android.content.Context
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -53,7 +58,7 @@ data class Note(
     var isImportant: Boolean
 )
 
-// ✅ Tambahkan ViewModel agar data tetap ada saat berpindah mode
+//  Tambahkan ViewModel agar data tetap ada saat berpindah mode
 class NoteViewModel : ViewModel() {
     var notes = mutableStateListOf<Note>()
 }
@@ -75,7 +80,9 @@ fun NoteApp() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, viewModel: NoteViewModel) {
-    val notes = viewModel.notes // Data dari ViewModel
+    val context = LocalContext.current  // Konteks aplikasi untuk Intent
+    val notes = viewModel.notes
+    val isDarkTheme = isSystemInDarkTheme() // Cek apakah dark mode aktif
 
     Scaffold(
         topBar = {
@@ -89,7 +96,7 @@ fun HomeScreen(navController: NavController, viewModel: NoteViewModel) {
                                 .size(40.dp)
                                 .padding(end = 8.dp)
                         )
-                        Text(stringResource(id = R.string.app_name))
+                        Text("Catatan", color = if (isDarkTheme) Color.White else Color.Black)
                     }
                 },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
@@ -106,48 +113,85 @@ fun HomeScreen(navController: NavController, viewModel: NoteViewModel) {
                 .padding(16.dp)
         ) {
             Button(onClick = { navController.navigate("note/new") }) {
-                Text(stringResource(id = R.string.create_note))
+                Text("Buat Catatan")
             }
             Spacer(modifier = Modifier.height(16.dp))
 
             val sortedNotes = notes.sortedByDescending { it.isImportant }
             sortedNotes.forEach { note ->
-                Column(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp)
-                ) {
-                    if (note.isImportant) {
-                        Text(stringResource(id = R.string.pinned_note))
-                    }
-                    note.imageUri?.let {
-                        Image(
-                            painter = rememberAsyncImagePainter(it),
-                            contentDescription = "Note Image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                        )
-                    }
-                    Text(
-                        text = note.text,
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface // ✅ Warna teks sesuai tema
+                        .border(
+                            width = 2.dp,
+                            color = if (isDarkTheme) Color.White else Color.Black,
+                            shape = MaterialTheme.shapes.medium
+                        ),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row {
-                        IconButton(onClick = { navController.navigate("note/${note.id}") }) {
-                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally // Biar rapi di tengah
+                    ) {
+                        // Menampilkan gambar jika ada
+                        note.imageUri?.let { uri ->
+                            Image(
+                                painter = rememberAsyncImagePainter(uri),
+                                contentDescription = "Note Image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp) // Ukuran gambar lebih jelas
+                                    .padding(bottom = 8.dp)
+                            )
                         }
-                        IconButton(onClick = { notes.remove(note) }) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
+
+                        // Tampilkan teks di bawah gambar
+                        Text(
+                            text = note.text,
+                            fontSize = 16.sp,
+                            color = if (isDarkTheme) Color.White else Color.Black,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Row untuk tombol edit, delete, dan share
+                        Row {
+                            IconButton(onClick = { navController.navigate("note/${note.id}") }) {
+                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray)
+                            }
+                            IconButton(onClick = { notes.remove(note) }) {
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
+                            }
+                            IconButton(onClick = { shareNote(context, note.text) }) {
+                                Icon(imageVector = Icons.Default.Share, contentDescription = "Share", tint = Color.Gray)
+                            }
                         }
                     }
                 }
             }
+
         }
     }
 }
+
+
+// Fungsi untuk berbagi catatan menggunakan Intent
+fun shareNote(context: Context, noteText: String) {
+    val sendIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, noteText)
+        type = "text/plain"
+    }
+    val shareIntent = Intent.createChooser(sendIntent, context.getString(R.string.share_via)) //  FIXED
+    context.startActivity(shareIntent)
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -230,13 +274,13 @@ fun NoteScreen(navController: NavController, viewModel: NoteViewModel, noteId: S
                 onValueChange = { noteText = it },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.textFieldColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant, // ✅ Background sesuai tema
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant, //  Background sesuai tema
                     cursorColor = MaterialTheme.colorScheme.primary,
                     focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                     unfocusedIndicatorColor = Color.Gray
                 ),
                 textStyle = LocalTextStyle.current.copy(
-                    color = MaterialTheme.colorScheme.onSurface // ✅ Warna teks mengikuti tema
+                    color = MaterialTheme.colorScheme.onSurface //  Warna teks mengikuti tema
                 )
             )
 
